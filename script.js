@@ -1,11 +1,130 @@
 // script.js
-
 const img = new Image(); // used to load image from <input> and draw to canvas
+const ctx = document.getElementById("user-image").getContext("2d");
+const inputImage = document.getElementById("image-input");
+const inputForm = document.getElementById("generate-meme");
+const ButtonGroup = document.getElementById("button-group")
+const clearButton = ButtonGroup.querySelector("button[type=reset]")
+const readButton = ButtonGroup.querySelector("button[type=button]")
+const submitButton = inputForm.querySelector("button[type=submit]")
+
+const topText = document.getElementById("text-top");
+const bottomText = document.getElementById("text-bottom");
+
+const voiceSelect = document.getElementById("voice-selection");
+
+const volumeGroup = document.getElementById("volume-group");
+const volumeInput = volumeGroup.querySelector('input[type=range]');
+const volumeIcon = volumeGroup.querySelector('img');
+
+const textFontStyle = "30px Arial"
+const borderTextGap = 50;
+const topYCoord = borderTextGap;
+const bottomYCoord = ctx.canvas.height - borderTextGap;
+
+
+// Helper functions
+
+function disableInput(disabled){
+  topText.disabled = bottomText.disabled = inputImage.disabled = disabled // TODO: Ask if we should disable
+}
+
+function enableSelectedButtons(enableSubmit, enableGroup){
+  for (let element of ButtonGroup.children){
+    if (element instanceof HTMLButtonElement){
+      element.disabled = !enableGroup;
+    }
+  }
+  voiceSelect.disabled = !enableGroup;
+  submitButton.disabled = !enableSubmit;
+}
+
+
+function populateVoiceList(){
+  // Populates the voice list dropdown
+  if (typeof speechSynthesis == 'undefined') return;
+
+  let invalidOption = voiceSelect.querySelector('option[value=none]')
+  if (invalidOption) voiceSelect.removeChild(invalidOption)
+
+  let voices = speechSynthesis.getVoices();
+  voices.forEach((voice, index) => {
+    let option = document.createElement("option");
+    option.textContent = `${voice.name} (${voice.lang})`;
+    if (voice.default) option.textContent += ' -- DEFAULT'
+    option.setAttribute('data-lang', voice.lang);
+    option.setAttribute('data-name', voice.name);
+    option.setAttribute('value', index);
+    voiceSelect.appendChild(option);
+  })
+}
+populateVoiceList();
+if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+
+// Event Listeners
+
+volumeInput.addEventListener('change', () => {
+  let volumeLevel = ""
+  if (volumeInput.value > 66) { volumeLevel = 3 }
+  else if (volumeInput.value > 33) { volumeLevel = 2 }
+  else if (volumeInput.value > 0) { volumeLevel = 1 }
+  else { volumeLevel = 0 }
+  volumeIcon.src = `icons/volume-level-${volumeLevel}.svg`;
+  volumeIcon.alt = `Volume Level ${volumeLevel};`
+})
+
+readButton.addEventListener('click', () => {
+  console.log("Read Text Called", voiceSelect.value);
+  let utterThis = new SpeechSynthesisUtterance(topText.value + ' ' + bottomText.value)
+  utterThis.voice = speechSynthesis.getVoices()[voiceSelect.value]
+  utterThis.volume = volumeInput.value / 100;
+  window.speechSynthesis.speak(utterThis);
+})
+
+submitButton.addEventListener('click', (e) => {
+  e.preventDefault();
+
+  ctx.font = textFontStyle
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 8;
+  ctx.fillStyle = 'white'
+  ctx.textAlign = "center"
+
+  const x = ctx.canvas.width / 2;
+  
+  ctx.strokeText(bottomText.value, x, bottomYCoord)
+  ctx.fillText(bottomText.value, x, bottomYCoord)
+
+  ctx.strokeText(topText.value, x, topYCoord)
+  ctx.fillText(topText.value, x, topYCoord)
+
+  enableSelectedButtons(false, true);
+  disableInput(true);
+})
+
+clearButton.addEventListener('click', () => {
+  ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+  enableSelectedButtons(true, false);
+  topText.value = bottomText.value = ''
+  inputImage.value = ''
+  disableInput(false);
+})
+
+inputImage.addEventListener('change', () => {
+  img.alt = inputImage.name
+  img.src = window.URL.createObjectURL(inputImage.files[0])
+})
 
 // Fires whenever the img object loads a new image (such as with img.src =)
 img.addEventListener('load', () => {
-  // TODO
+  ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+  ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height)
+  let dimensions = getDimmensions(ctx.canvas.width, ctx.canvas.height, img.width, img.height)
 
+  ctx.drawImage(img, dimensions.startX, dimensions.startY, dimensions.width, dimensions.height);
   // Some helpful tips:
   // - Fill the whole Canvas with black first to add borders on non-square images, then draw on top
   // - Clear the form when a new image is selected
@@ -51,3 +170,4 @@ function getDimmensions(canvasWidth, canvasHeight, imageWidth, imageHeight) {
 
   return { 'width': width, 'height': height, 'startX': startX, 'startY': startY }
 }
+

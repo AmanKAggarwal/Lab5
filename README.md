@@ -1,11 +1,11 @@
 # CSE110 SP21 Lab 5
 
 ## Author(s):
-- YOUR NAME
+- Aman Aggarwal
 
 ## Part 1:
 
-LINK TO YOUR PUBLISHED SITE
+[LINK TO PUBLISHED SITE](https://amankaggarwal.github.io/Lab5/)
 
 ## Part 2:
 
